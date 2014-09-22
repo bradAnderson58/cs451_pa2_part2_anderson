@@ -45,7 +45,8 @@ Point3d* selected;						//a pointer to a selected node in FFD_lattice
 bool sel = false;						//is a node selected or no?
 
 GLdouble projectedZ;					//z coordinate for unproject
-
+Point3d oldPoint;						//old point for optimizing deformation code
+int selIndex;							//index of point for optimizing deformation code
 
 //-----------------------------------------------------------------------------
 //this defines the size of the lattice
@@ -361,6 +362,7 @@ void Mouse(int button, int state, int x, int y)
 				{
 					best = ctr;
 					projectedZ = *winz;
+					
 				}
 			}
 			ctr++;
@@ -368,6 +370,8 @@ void Mouse(int button, int state, int x, int y)
 		if (best != -1){
 			selected = &FFD_lattice[best];
 			sel = true;
+			oldPoint = FFD_lattice[best];
+			selIndex = best;
 		}
 	}
 }
@@ -403,18 +407,23 @@ bool Motion(int x, int y)
 		double xthing, ything, zthing;
 		for (int i = 0; i < m.v_size; ++i){  //DO this for every point in the model
 			xthing = ything = zthing = 0;
-			vector<double> weights = FFD_parameterization[i];   //this is a vector of lattice weights for this model vertex
+			int inverseInd = FFD_lattice.size() - selIndex - 1;
+			xthing = m.vertices[i].p[0] - (oldPoint[0] * FFD_parameterization[i][inverseInd]) + (selected[0][0] * FFD_parameterization[i][inverseInd]);
+			ything = m.vertices[i].p[1] - (oldPoint[1] * FFD_parameterization[i][inverseInd]) + (selected[0][1] * FFD_parameterization[i][inverseInd]);
+			zthing = m.vertices[i].p[2] - (oldPoint[2] * FFD_parameterization[i][inverseInd]) + (selected[0][2] * FFD_parameterization[i][inverseInd]);
+			/*vector<double> weights = FFD_parameterization[i];   //this is a vector of lattice weights for this model vertex
 			int ctr = FFD_lattice.size()-1;
 			for (Point3d point : FFD_lattice){					//for each point in the lattice, add up the product of the point times the weight
 				xthing += (point[0] * weights[ctr]);
 				ything += (point[1] * weights[ctr]);
 				zthing += (point[2] * weights[ctr]);
 				ctr--;
-			}
+			}*/
 			m.vertices[i].p[0] = xthing;
 			m.vertices[i].p[1] = ything;
 			m.vertices[i].p[2] = zthing;
 		}
+		oldPoint = FFD_lattice[selIndex];
 		glutPostRedisplay();
 		return true;   //if a point is being moved, don't rotate the model!!!!!!!!!
 	}
